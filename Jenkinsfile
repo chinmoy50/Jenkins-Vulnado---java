@@ -13,11 +13,7 @@ pipeline {
         stage('Clean Up Old Files') {
             steps {
                 script {
-                    sh 'rm -rf venv'
-                    sh 'rm -rf project.zip'
-                    sh 'rm -rf *.json'
-                    sh 'rm -rf *.csv'
-                    sh 'rm -rf *.sh'
+                    sh 'rm -rf venv project.zip project_folder *.json *.csv *.sh'
                 }
             }
         }
@@ -31,10 +27,12 @@ pipeline {
         stage('Create ZIP Files') {
             steps {
                 script {
-                    sh 'rm -rf project_folder'
-                    sh 'mkdir project_folder'
-                    sh 'find . -maxdepth 1 -not -name "." -not -name ".." -not -name ".git" -not -name "venv" -not -name "project_folder" -exec mv {} project_folder/ \\;'
-                    sh 'zip -r project.zip project_folder'
+                    sh '''
+                        rm -rf project_folder
+                        mkdir project_folder
+                        find . -maxdepth 1 -not -name "." -not -name ".." -not -name ".git" -not -name "venv" -not -name "project_folder" -exec mv {} project_folder/ \\;
+                        zip -r project.zip project_folder
+                    '''
                 }
             }
         }
@@ -44,24 +42,29 @@ pipeline {
                 script {
                     def response = sh(script: """
                         #!/bin/bash
-                        curl -v -X POST \
+                        curl -s -w "%{http_code}" -X POST \
                         -H "Client-ID: ${CLIENT_ID}" \
                         -H "Client-Secret: ${CLIENT_SECRET}" \
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
                         -F "scanName=New SCA Scan from Jenkins Pipeline" \
                         -F "language=java" \
-                        "${SCA_API_URL}"
+                        "${SCA_API_URL}" \
+                        -o sca_response.json
                     """, returnStdout: true).trim()
 
-                    def jsonResponse = readJSON(text: response)
-                    def canProceedSCA = jsonResponse.canProceed
-                    def vulnsTable = jsonResponse.vulnsTable
+                    def httpCode = response[-3..-1]  // Extract last 3 characters for HTTP code
+                    def jsonResponse = readJSON(file: 'sca_response.json')
 
-                    def cleanVulnsTable = vulnsTable.replaceAll(/\x1B\[[;0-9]*m/, '')
+                    if (httpCode != "200") {
+                        error "SCA scan failed with HTTP code ${httpCode}: ${jsonResponse?.message}"
+                    }
+
+                    def vulnsTable = jsonResponse.vulnsTable ?: "No vulnerabilities found."
+                    def canProceedSCA = jsonResponse.canProceed ?: false
 
                     echo "Vulnerabilities found during SCA:"
-                    echo "${cleanVulnsTable}"
+                    echo vulnsTable
 
                     env.CAN_PROCEED_SCA = canProceedSCA.toString()
                 }
@@ -85,24 +88,29 @@ pipeline {
                 script {
                     def response = sh(script: """
                         #!/bin/bash
-                        curl -v -X POST \
+                        curl -s -w "%{http_code}" -X POST \
                         -H "Client-ID: ${CLIENT_ID}" \
                         -H "Client-Secret: ${CLIENT_SECRET}" \
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
                         -F "scanName=New SAST Scan from Jenkins Pipeline" \
                         -F "language=java" \
-                        "${SAST_API_URL}"
+                        "${SAST_API_URL}" \
+                        -o sast_response.json
                     """, returnStdout: true).trim()
 
-                    def jsonResponse = readJSON(text: response)
-                    def canProceedSAST = jsonResponse.canProceed
-                    def vulnsTable = jsonResponse.vulnsTable
+                    def httpCode = response[-3..-1]
+                    def jsonResponse = readJSON(file: 'sast_response.json')
 
-                    def cleanVulnsTable = vulnsTable.replaceAll(/\x1B\[[;0-9]*m/, '')
+                    if (httpCode != "200") {
+                        error "SAST scan failed with HTTP code ${httpCode}: ${jsonResponse?.message}"
+                    }
+
+                    def vulnsTable = jsonResponse.vulnsTable ?: "No vulnerabilities found."
+                    def canProceedSAST = jsonResponse.canProceed ?: false
 
                     echo "Vulnerabilities found during SAST:"
-                    echo "${cleanVulnsTable}"
+                    echo vulnsTable
 
                     env.CAN_PROCEED_SAST = canProceedSAST.toString()
                 }
@@ -120,8 +128,10 @@ pipeline {
 
         stage('Set Up Python') {
             steps {
-                sh 'python3 -m venv venv'
-                sh '. venv/bin/activate && pip install --upgrade pip'
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate && pip install --upgrade pip
+                '''
             }
         }
 
