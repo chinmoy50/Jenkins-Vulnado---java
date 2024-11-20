@@ -49,8 +49,8 @@ pipeline {
                         -H "Client-Secret: ${CLIENT_SECRET}" \
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
-                        -F "scanName=Java SCA Scan from Jenkins Pipeline" \
-                        -F "language=java" \
+                        -F "scanName=New SCA Scan from Jenkins Pipeline" \
+                        -F "language=python" \
                         "${SCA_API_URL}"
                     """, returnStdout: true).trim()
 
@@ -90,8 +90,8 @@ pipeline {
                         -H "Client-Secret: ${CLIENT_SECRET}" \
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
-                        -F "scanName=Java SAST Scan from Jenkins Pipeline" \
-                        -F "language=java" \
+                        -F "scanName=New SAST Scan from Jenkins Pipeline" \
+                        -F "language=python" \
                         "${SAST_API_URL}"
                     """, returnStdout: true).trim()
 
@@ -118,6 +118,11 @@ pipeline {
             }
         }
 
+        stage('Install Dependencies') {
+            steps {
+                sh '. venv/bin/activate && pip install -r requirements.txt'
+            }
+        }
 
         // Additional stages (e.g., deploy) can be added here
     }
