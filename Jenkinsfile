@@ -50,7 +50,7 @@ pipeline {
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
                         -F "scanName=New SCA Scan from Jenkins Pipeline" \
-                        -F "language=python" \
+                        -F "language=java" \
                         "${SCA_API_URL}"
                     """, returnStdout: true).trim()
 
@@ -91,7 +91,7 @@ pipeline {
                         -F "projectZipFile=@project.zip" \
                         -F "applicationId=${APPLICATION_ID}" \
                         -F "scanName=New SAST Scan from Jenkins Pipeline" \
-                        -F "language=python" \
+                        -F "language=java" \
                         "${SAST_API_URL}"
                     """, returnStdout: true).trim()
 
