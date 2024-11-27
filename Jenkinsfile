@@ -118,12 +118,6 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
-            steps {
-                sh '. venv/bin/activate && pip install -r requirements.txt'
-            }
-        }
-
         // Additional stages (e.g., deploy) can be added here
     }
 }
