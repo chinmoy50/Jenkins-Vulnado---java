@@ -69,9 +69,6 @@ pipeline {
         }
 
         stage('Perform SAST Scan') {
-            when {
-                expression { return env.CAN_PROCEED_SCA == 'true' }
-            }
             steps {
                 script {
                     def response = sh(script: """
