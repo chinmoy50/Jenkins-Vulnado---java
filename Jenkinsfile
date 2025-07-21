@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        CLIENT_ID = '123e4567-e89b-12d3-a456-426614174001'
-        CLIENT_SECRET = '7a91d1c9-2583-4ef6-8907-7c974f1d6a0e'
-        APPLICATION_ID = '673413da502d06461c39d283'
+        CLIENT_ID = '23e4567-e89b-12d3-a456-426614174001'
+        CLIENT_SECRET = '47261cbcf55a16506007c76fd964175e'
+        APPLICATION_ID = '687dd08dc1fea26caf6869ef'
         SCA_API_URL = 'https://appsecops-api.intruceptlabs.com/api/v1/integrations/sca-scans'
         SAST_API_URL = 'https://appsecops-api.intruceptlabs.com/api/v1/integrations/sast-scans'
     }
